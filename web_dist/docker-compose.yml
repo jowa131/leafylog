@@ -1,10 +1,29 @@
 services:
   leafylog-web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: leafylog-web
     restart: unless-stopped
+    depends_on:
+      - log_server
     networks:
       - proxy_net
+
+  log_server:
+    build:
+      context: ./log_server
+      dockerfile: Dockerfile
+    container_name: leafylog-log-server
+    restart: unless-stopped
+    volumes:
+      # 크래시 로그를 호스트 볼륨에 마운트하여 컨테이너 재시작 후에도 보존한다.
+      - leafylog_logs:/data
+    networks:
+      - proxy_net
+
+volumes:
+  leafylog_logs:
 
 networks:
   proxy_net:
