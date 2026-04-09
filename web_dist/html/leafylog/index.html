@@ -76,9 +76,17 @@
     }
 
     /* ── 버전 배지 ── */
-    .version-badge {
-      display: inline-block;
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-block;
       background: var(--green-100);
       color: var(--green-600);
       font-size: 0.78rem;
@@ -86,6 +94,11 @@
       letter-spacing: 0.4px;
       padding: 4px 12px;
       border-radius: 999px;
+    }
+
+    .badge.date {
+      background: var(--gray-100);
+      color: var(--gray-500);
     }
 
     /* ── 다운로드 버튼 ── */
@@ -139,73 +152,46 @@
       margin-top: 20px;
     }
 
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
     .section-title {
       font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       color: var(--gray-500);
-      margin-bottom: 16px;
     }
 
-    .release-scroll {
-      max-height: 320px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+    .release-date {
+      font-size: 0.78rem;
+      color: var(--gray-500);
     }
 
-    .milestone {
-      margin-bottom: 20px;
-    }
-
-    .milestone:last-child { margin-bottom: 0; }
-
-    .milestone-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: var(--green-600);
-      margin-bottom: 8px;
-    }
-
-    .milestone-title .tag {
-      background: var(--green-100);
-      color: var(--green-600);
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 999px;
-    }
-
-    .milestone ul {
+    .feature-list {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 10px;
     }
 
-    .milestone li {
-      font-size: 0.85rem;
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
       color: var(--gray-700);
-      line-height: 1.5;
-      padding-left: 14px;
-      position: relative;
+      line-height: 1.55;
     }
 
-    .milestone li::before {
-      content: "•";
-      position: absolute;
-      left: 0;
-      color: var(--green-500);
-      font-weight: 700;
-    }
-
-    .divider {
-      border: none;
-      border-top: 1px solid var(--gray-200);
-      margin: 14px 0;
+    .feature-list li .icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
     }
 
     /* ── 안드로이드 안내 카드 ── */
@@ -238,7 +224,6 @@
   <!-- 헤더 카드 -->
   <div class="hero">
     <div class="app-icon">
-      <!-- 잎사귀 아이콘 (SVG inline) -->
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20
                  C19 20 22 3 22 3c-1 2-8 2-8 2a4 4 0 0 1 3 3z"/>
@@ -248,7 +233,10 @@
     <p class="app-tagline">
       AI가 내 식물의 건강을 분석하는<br />로컬 퍼스트 식물 관리 다이어리
     </p>
-    <span class="version-badge">v1.0.0 · Android</span>
+    <div class="meta-row">
+      <span class="badge">v1.1.0 · Android</span>
+      <span class="badge date">2026-04-09</span>
+    </div>
 
     <a class="download-btn" href="leafylog-latest.apk" download="leafylog-latest.apk">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -269,72 +257,36 @@
 
   <!-- 릴리즈 노트 카드 -->
   <div class="section-card">
-    <div class="section-title">Release Notes</div>
-    <div class="release-scroll">
-
-      <div class="milestone">
-        <div class="milestone-title">
-          <span>M1 · 프로젝트 스캐폴딩</span>
-          <span class="tag">기반</span>
-        </div>
-        <ul>
-          <li>Flutter 3.41 + Riverpod 2.4 기반 아키텍처 구성</li>
-          <li>Hive 로컬 NoSQL DB 초기화 및 어댑터 연동</li>
-          <li>flutter_dotenv를 이용한 API 키 환경 분리</li>
-          <li>GoRouter 기반 페이지 라우팅 체계 수립</li>
-        </ul>
-      </div>
-
-      <hr class="divider" />
-
-      <div class="milestone">
-        <div class="milestone-title">
-          <span>M2 · 로컬 데이터 저장</span>
-          <span class="tag">스토리지</span>
-        </div>
-        <ul>
-          <li>plants.json / history_log.json 파일 기반 CRUD 구현</li>
-          <li>UUID v4 식물 ID 자동 발급 및 소프트 삭제(아카이브) 지원</li>
-          <li>사진 촬영·갤러리 선택 후 자동 압축 저장 (≤1.5 MB, 최대 2048 px)</li>
-          <li>AppSettings / CacheEntry Hive 모델 구현</li>
-        </ul>
-      </div>
-
-      <hr class="divider" />
-
-      <div class="milestone">
-        <div class="milestone-title">
-          <span>M3 · Gemini AI 연동</span>
-          <span class="tag">AI 분석</span>
-        </div>
-        <ul>
-          <li>Gemini 1.5 Flash 멀티모달 API 호출 (이미지 + 프롬프트)</li>
-          <li>식물 종명·관리 경과일·최근 이벤트를 컨텍스트로 주입하여 오인식 방지</li>
-          <li>지수 백오프 재시도 (1 s → 2 s → 4 s, 최대 3회)</li>
-          <li>AI 응답 JSON 자동 파싱 → 건강 점수·이슈·권장사항 저장</li>
-          <li>파싱 실패 시 원시 응답을 history_log에 보존</li>
-        </ul>
-      </div>
-
-      <hr class="divider" />
-
-      <div class="milestone">
-        <div class="milestone-title">
-          <span>M4 · QA 및 릴리즈 빌드</span>
-          <span class="tag">배포</span>
-        </div>
-        <ul>
-          <li>D-Day 계산·JSON 파싱 순수 함수 단위 테스트 17건 통과</li>
-          <li>ProGuard/R8 난독화 + split-debug-info 적용 릴리즈 APK 빌드</li>
-          <li>android:allowBackup 활성화로 Google One Backup 지원</li>
-        </ul>
-      </div>
-
+    <div class="section-header">
+      <span class="section-title">What's New</span>
+      <span class="release-date">2026-04-09</span>
     </div>
+    <ul class="feature-list">
+      <li>
+        <span class="icon">🤖</span>
+        <span>사진을 찍으면 AI가 식물 종명과 물주기 간격을 자동으로 입력해준다</span>
+      </li>
+      <li>
+        <span class="icon">📷</span>
+        <span>식물 상세 화면에서 사진과 메모를 추가해 성장 이력을 기록할 수 있다</span>
+      </li>
+      <li>
+        <span class="icon">📅</span>
+        <span>D-Day 표시가 등록일 기준으로 자동 갱신된다 (D+N)</span>
+      </li>
+      <li>
+        <span class="icon">🛡️</span>
+        <span>앱 내 오류가 자동으로 수집되어 안정성이 개선된다</span>
+      </li>
+      <li>
+        <span class="icon">🌿</span>
+        <span>식물 목록·상세·AI 분석 등 핵심 기능 전반 안정성 향상</span>
+      </li>
+    </ul>
   </div>
 
   <footer>
-    leafylog v1.0.0 · 2026 · Built with Flutter &amp; Gemini AI
+    leafylog v1.1.0 · 2026 · Built with Flutter &amp; Gemini AI
   </footer>
 
 </body>
