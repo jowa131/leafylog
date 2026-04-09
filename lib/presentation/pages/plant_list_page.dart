@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/date_utils.dart';
 import '../../data/local/file/models/plant_model.dart';
 import '../../providers/storage_providers.dart';
 import 'plant_detail_page.dart';
@@ -119,12 +120,8 @@ class _PlantCard extends StatelessWidget {
   final String docDir;
   final VoidCallback onTap;
 
-  /// D-Day 기준일로부터 경과일을 계산한다.
-  int get _ddayElapsed {
-    final anchor = DateTime.tryParse(plant.ddayAnchor);
-    if (anchor == null) return 0;
-    return DateTime.now().difference(anchor).inDays;
-  }
+  // D-Day 계산을 core/utils/date_utils.dart 공용 함수로 통일한다.
+  int get _ddayElapsed => calcDdayElapsed(plant.ddayAnchor);
 
   /// 썸네일 파일의 전체 경로를 반환한다.
   String? get _thumbnailPath {

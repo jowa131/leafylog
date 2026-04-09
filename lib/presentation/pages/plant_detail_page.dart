@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/services/crash_reporter.dart';
+import '../../core/utils/date_utils.dart';
 import '../../data/local/file/models/history_log_model.dart';
 import '../../data/local/file/models/plant_model.dart';
 import '../../providers/analysis_providers.dart';
@@ -26,12 +27,10 @@ class PlantDetailPage extends ConsumerStatefulWidget {
 
 class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
   bool _isAnalyzing = false;
+  bool _isSavingRecord = false;
 
-  int get _ddayElapsed {
-    final anchor = DateTime.tryParse(widget.plant.ddayAnchor);
-    if (anchor == null) return 0;
-    return DateTime.now().difference(anchor).inDays;
-  }
+  // D-Day 계산을 core/utils/date_utils.dart의 공용 함수로 통일한다.
+  int get _ddayElapsed => calcDdayElapsed(widget.plant.ddayAnchor);
 
   // ── AI 분석 플로우 ────────────────────────────────────────
 
@@ -112,6 +111,136 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
     }
   }
 
+  // ── 성장 기록 추가 플로우 ─────────────────────────────────
+
+  /// 사진과 메모를 첨부하여 USER_NOTE 이력 엔트리를 저장한다.
+  void _showAddGrowthRecordSheet() {
+    final noteCtrl = TextEditingController();
+    String? pickedPhotoPath;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('성장 기록 추가',
+                      style: Theme.of(ctx).textTheme.titleMedium),
+                  const SizedBox(height: 16),
+                  // 사진 선택
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: Text(pickedPhotoPath == null
+                        ? '사진 선택 (선택)'
+                        : '사진 선택됨'),
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final file = await picker.pickImage(
+                          source: ImageSource.gallery, imageQuality: 90);
+                      if (file != null) {
+                        setSheetState(() => pickedPhotoPath = file.path);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteCtrl,
+                    decoration: const InputDecoration(
+                      labelText: '메모',
+                      hintText: '오늘 상태, 특이사항 등',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _saveGrowthRecord(
+                        note: noteCtrl.text.trim(),
+                        photoPath: pickedPhotoPath,
+                      );
+                    },
+                    child: const Text('저장'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// USER_NOTE 이력 엔트리를 history_log.json에 저장한다.
+  Future<void> _saveGrowthRecord({
+    required String note,
+    String? photoPath,
+  }) async {
+    if (note.isEmpty && photoPath == null) return;
+
+    setState(() => _isSavingRecord = true);
+    try {
+      String? savedFilename;
+
+      // 사진이 있으면 압축 저장한다.
+      if (photoPath != null) {
+        final photoService = ref.read(photoServiceProvider);
+        savedFilename = await photoService.saveFromPath(
+          sourcePath: photoPath,
+          plantId: widget.plant.id,
+        );
+      }
+
+      final now = DateTime.now();
+      final entry = HistoryEntry(
+        entryId:
+            'log_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_'
+            '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}',
+        timestamp: now,
+        eventType: EventType.userNote,
+        photoFile: savedFilename,
+        userNote: note.isEmpty ? null : note,
+      );
+
+      final repo = ref.read(fileSystemRepositoryProvider);
+      await repo.appendHistoryEntry(widget.plant.id, entry);
+
+      // 이력 캐시 무효화
+      ref.invalidate(plantHistoryProvider(widget.plant.id));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('성장 기록이 저장됐다.')),
+        );
+      }
+    } catch (e, stack) {
+      CrashReporter.instance.report(
+        message: '성장 기록 저장 실패: $e',
+        stackTrace: stack.toString(),
+        deviceInfo: {'plant_id': widget.plant.id, 'source': 'PlantDetailPage'},
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('저장 실패: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingRecord = false);
+    }
+  }
+
   // ── UI ────────────────────────────────────────────────────
 
   @override
@@ -155,17 +284,42 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const Key('analyze_button'),
-        onPressed: _isAnalyzing ? null : _startAnalysis,
-        icon: _isAnalyzing
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.biotech_outlined),
-        label: Text(_isAnalyzing ? '분석 중...' : 'AI 분석 시작'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // 성장 기록 추가 버튼
+          FloatingActionButton.small(
+            key: const Key('add_growth_record_button'),
+            heroTag: 'add_growth',
+            onPressed: (_isSavingRecord || _isAnalyzing)
+                ? null
+                : _showAddGrowthRecordSheet,
+            tooltip: '성장 기록 추가',
+            child: _isSavingRecord
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.add_photo_alternate_outlined),
+          ),
+          const SizedBox(height: 8),
+          // AI 분석 버튼
+          FloatingActionButton.extended(
+            key: const Key('analyze_button'),
+            heroTag: 'analyze',
+            onPressed: _isAnalyzing ? null : _startAnalysis,
+            icon: _isAnalyzing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.biotech_outlined),
+            label: Text(_isAnalyzing ? '분석 중...' : 'AI 분석 시작'),
+          ),
+        ],
       ),
     );
   }
