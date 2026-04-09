@@ -46,4 +46,4 @@ app.*.map.json
 
 # API 키 — 절대 커밋 금지
 .env
-web_dist/html/leafylog/leafylog-latest.apk
+web_dist/html/leafylog/leafylog-*.apk
