@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../data/local/file/file_system_repository.dart';
 import '../data/local/file/models/plant_model.dart';
@@ -26,12 +26,11 @@ final photoServiceProvider = Provider<PhotoService>((ref) {
   return PhotoService(repo);
 });
 
-/// [getApplicationDocumentsDirectory] 경로를 캐싱하는 Provider.
+/// 앱 문서 디렉토리 경로. main.dart 기동 시 override하여 주입한다.
 ///
 /// 썸네일 이미지 경로 조합 시 사용한다.
-final appDocDirProvider = FutureProvider<String>((ref) async {
-  final dir = await getApplicationDocumentsDirectory();
-  return dir.path;
+final appDocDirProvider = Provider<String>((ref) {
+  throw UnimplementedError('appDocDirProvider는 main.dart에서 override해야 한다.');
 });
 
 // ── 식물 목록 상태 Provider ───────────────────────────────────
@@ -47,13 +46,15 @@ final plantsProvider =
 
 /// 식물 목록 상태를 관리하는 [StateNotifier].
 ///
-/// 식물 등록·수정·아카이브 후 내부적으로 목록을 재로드한다.
+/// 등록·수정·아카이브 시 메모리 상태를 먼저 선반영(Optimistic Update)하고,
+/// 이후 디스크에 비동기로 동기화한다.
 class PlantsNotifier extends StateNotifier<AsyncValue<List<PlantModel>>> {
   PlantsNotifier(this._repo) : super(const AsyncValue.loading()) {
     loadPlants();
   }
 
   final FileSystemRepository _repo;
+  static const _uuid = Uuid();
 
   /// plants.json을 읽어 상태를 갱신한다.
   Future<void> loadPlants() async {
@@ -64,22 +65,44 @@ class PlantsNotifier extends StateNotifier<AsyncValue<List<PlantModel>>> {
     });
   }
 
-  /// 새 식물을 등록하고 목록을 갱신한다.
+  /// 새 식물을 등록한다.
+  ///
+  /// 메모리 상태에 즉시 추가한 뒤 디스크에 저장한다.
   Future<PlantModel> registerPlant(PlantModel plant) async {
-    final created = await _repo.registerPlant(plant);
-    await loadPlants();
-    return created;
+    final newPlant = PlantModel(
+      id: _uuid.v4(),
+      displayName: plant.displayName,
+      species: plant.species,
+      registeredAt: plant.registeredAt,
+      thumbnail: plant.thumbnail,
+      wateringIntervalDays: plant.wateringIntervalDays,
+      ddayAnchor: plant.ddayAnchor,
+      tags: plant.tags,
+      isArchived: false,
+    );
+
+    final current = state.valueOrNull ?? [];
+    state = AsyncValue.data([...current, newPlant]);
+
+    await _repo.saveNewPlant(newPlant);
+    return newPlant;
   }
 
-  /// 식물 정보를 수정하고 목록을 갱신한다.
+  /// 식물 정보를 수정한다.
+  ///
+  /// 메모리 상태를 먼저 교체하고 디스크에 동기화한다.
   Future<void> updatePlant(PlantModel plant) async {
+    final current = state.valueOrNull ?? [];
+    state = AsyncValue.data(
+      current.map((p) => p.id == plant.id ? plant : p).toList(),
+    );
     await _repo.updatePlant(plant);
-    await loadPlants();
   }
 
-  /// 식물을 아카이브 처리하고 목록에서 제거한다.
+  /// 식물을 아카이브 처리하고 목록에서 즉시 제거한다.
   Future<void> archivePlant(String plantId) async {
+    final current = state.valueOrNull ?? [];
+    state = AsyncValue.data(current.where((p) => p.id != plantId).toList());
     await _repo.archivePlant(plantId);
-    await loadPlants();
   }
 }

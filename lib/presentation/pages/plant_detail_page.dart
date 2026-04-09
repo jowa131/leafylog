@@ -111,7 +111,7 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
   Widget build(BuildContext context) {
     final historyAsync =
         ref.watch(plantHistoryProvider(widget.plant.id));
-    final appDocDirAsync = ref.watch(appDocDirProvider);
+    final appDocDirAsync = ref.watch(appDocDirProvider); // Provider<String>
 
     return Scaffold(
       appBar: AppBar(
@@ -126,7 +126,7 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
             _PlantInfoCard(
               plant: widget.plant,
               ddayElapsed: _ddayElapsed,
-              docDir: appDocDirAsync.value,
+              docDir: appDocDirAsync,
             ),
             const SizedBox(height: 20),
             Text('이력', style: Theme.of(context).textTheme.titleMedium),

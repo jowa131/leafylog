@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'data/local/hive/hive_service.dart';
 import 'presentation/pages/plant_list_page.dart';
@@ -16,11 +17,15 @@ Future<void> main() async {
   final hiveService = HiveService();
   await hiveService.init();
 
+  // 앱 문서 디렉토리 경로를 기동 시 1회 캐싱한다.
+  // appDocDirProvider(Provider<String>)에 override하여 UI 깜빡임을 제거한다.
+  final appDocDir = await getApplicationDocumentsDirectory();
+
   runApp(
     ProviderScope(
       overrides: [
-        // 초기화된 HiveService 인스턴스를 Provider에 주입한다.
         hiveServiceProvider.overrideWithValue(hiveService),
+        appDocDirProvider.overrideWithValue(appDocDir.path),
       ],
       child: const LeafyLogApp(),
     ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -62,15 +63,18 @@ class FileSystemRepository {
     if (!file.existsSync()) return PlantsIndex.empty();
 
     final raw = await file.readAsString();
-    return PlantsIndex.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return Isolate.run(
+      () => PlantsIndex.fromJson(jsonDecode(raw) as Map<String, dynamic>),
+    );
   }
 
   /// [PlantsIndex]를 plants.json에 덮어쓴다.
   Future<void> _writePlantsIndex(PlantsIndex index) async {
     final file = await _getPlantsIndexFile();
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(index.toJson()),
+    final encoded = await Isolate.run(
+      () => const JsonEncoder.withIndent('  ').convert(index.toJson()),
     );
+    await file.writeAsString(encoded);
   }
 
   /// 새 식물을 등록하고, 생성된 UUID를 포함한 [PlantModel]을 반환한다.
@@ -127,15 +131,18 @@ class FileSystemRepository {
     if (!file.existsSync()) return HistoryLogModel.empty(plantId);
 
     final raw = await file.readAsString();
-    return HistoryLogModel.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return Isolate.run(
+      () => HistoryLogModel.fromJson(jsonDecode(raw) as Map<String, dynamic>),
+    );
   }
 
   Future<void> _writeHistoryLog(HistoryLogModel log) async {
     final plantDir = await _getPlantDir(log.plantId);
     final file = File('${plantDir.path}/$_historyFile');
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(log.toJson()),
+    final encoded = await Isolate.run(
+      () => const JsonEncoder.withIndent('  ').convert(log.toJson()),
     );
+    await file.writeAsString(encoded);
   }
 
   /// [plantId]의 이력 로그에 [entry]를 추가한다.
@@ -148,5 +155,15 @@ class FileSystemRepository {
   Future<String> getPhotosDirPath(String plantId) async {
     final dir = await _getPhotosDir(plantId);
     return dir.path;
+  }
+
+  /// 사전에 ID가 부여된 신규 식물을 저장한다.
+  ///
+  /// [PlantsNotifier]에서 낙관적 갱신 후 디스크 동기화 시 호출된다.
+  Future<void> saveNewPlant(PlantModel plant) async {
+    await _getPhotosDir(plant.id);
+    await _writeHistoryLog(HistoryLogModel.empty(plant.id));
+    final index = await readPlantsIndex();
+    await _writePlantsIndex(index.upsert(plant));
   }
 }

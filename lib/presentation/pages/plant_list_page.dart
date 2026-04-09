@@ -17,7 +17,7 @@ class PlantListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plantsAsync = ref.watch(plantsProvider);
-    final appDocDirAsync = ref.watch(appDocDirProvider);
+    final docDir = ref.watch(appDocDirProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -28,14 +28,8 @@ class PlantListPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('목록 로드 실패: $e')),
         data: (plants) {
-          if (plants.isEmpty) {
-            return const _EmptyState();
-          }
-          return appDocDirAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('경로 오류: $e')),
-            data: (docDir) => _PlantGrid(plants: plants, docDir: docDir),
-          );
+          if (plants.isEmpty) return const _EmptyState();
+          return _PlantGrid(plants: plants, docDir: docDir);
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -153,7 +147,7 @@ class _PlantCard extends StatelessWidget {
           // 썸네일 영역
           Expanded(
             child: (thumbFile != null && thumbFile.existsSync())
-                ? Image.file(thumbFile, fit: BoxFit.cover)
+                ? Image.file(thumbFile, fit: BoxFit.cover, cacheWidth: 300)
                 : Container(
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: Icon(

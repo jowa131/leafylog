@@ -1,22 +1,21 @@
 import 'dart:typed_data';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 /// Gemini API와 통신하는 클라이언트.
 ///
 /// 모델: `gemini-1.5-flash` (MVP 모바일 환경 Latency 최소화)
-/// API 키: `.env`의 `GEMINI_API_KEY`에서 로드한다.
+/// API 키: [GeminiApiClient] 생성 시 외부에서 주입받는다.
 /// 재시도: HTTP 429/503 발생 시 Exponential Backoff (1s → 2s → 4s, 최대 3회).
 class GeminiApiClient {
-  GeminiApiClient() {
-    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+  GeminiApiClient({required String apiKey}) {
     _model = GenerativeModel(
       model: 'gemini-1.5-flash',
       apiKey: apiKey,
       generationConfig: GenerationConfig(
-        temperature: 0.1, // 낮은 temperature로 JSON 응답의 일관성을 높인다
+        temperature: 0.1,
         maxOutputTokens: 1024,
+        responseMimeType: 'application/json',
       ),
     );
   }
