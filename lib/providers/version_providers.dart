@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 /// 현재 앱 버전 상수.
 ///
 /// 릴리즈 시 release_manager 스킬이 이 값을 함께 업데이트한다.
-const String kAppVersion = '1.1.0';
+const String kAppVersion = '1.2.0';
 
 /// version.json 엔드포인트.
 const String _versionUrl =
