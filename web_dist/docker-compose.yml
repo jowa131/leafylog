@@ -8,7 +8,9 @@ services:
     depends_on:
       - log_server
     networks:
-      - proxy_net
+      proxy_net:
+        # IP 고정 — 외부 nginx_proxy_service의 DNS 캐시가 만료되어도 항상 같은 IP로 접근된다.
+        ipv4_address: 172.18.0.7
 
   log_server:
     build:
@@ -20,7 +22,8 @@ services:
       # 크래시 로그를 호스트 볼륨에 마운트하여 컨테이너 재시작 후에도 보존한다.
       - leafylog_logs:/data
     networks:
-      - proxy_net
+      proxy_net:
+        ipv4_address: 172.18.0.8
 
 volumes:
   leafylog_logs:
