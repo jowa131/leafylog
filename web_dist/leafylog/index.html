@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>leafylog - 다운로드</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-600: #16a34a;
+      --green-500: #22c55e;
+      --green-100: #dcfce7;
+      --green-50:  #f0fdf4;
+      --gray-900:  #111827;
+      --gray-700:  #374151;
+      --gray-500:  #6b7280;
+      --gray-200:  #e5e7eb;
+      --gray-100:  #f3f4f6;
+      --white:     #ffffff;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,.10);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--green-50);
+      color: var(--gray-900);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+    }
+
+    /* ── 헤더 카드 ── */
+    .hero {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 36px 28px 28px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .app-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--green-600);
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .app-icon svg {
+      width: 44px;
+      height: 44px;
+      fill: var(--white);
+    }
+
+    .app-name {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--green-600);
+    }
+
+    .app-tagline {
+      margin-top: 8px;
+      font-size: 0.95rem;
+      color: var(--gray-500);
+      line-height: 1.6;
+    }
+
+    /* ── 버전 배지 ── */
+    .version-badge {
+      display: inline-block;
+      margin-top: 16px;
+      background: var(--green-100);
+      color: var(--green-600);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+
+    /* ── 다운로드 버튼 ── */
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 24px;
+      width: 100%;
+      padding: 16px;
+      background: var(--green-600);
+      color: var(--white);
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .download-btn:active {
+      background: #15803d;
+      transform: scale(0.98);
+    }
+
+    .download-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--white);
+      flex-shrink: 0;
+    }
+
+    .download-note {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--gray-500);
+      text-align: center;
+    }
+
+    /* ── 릴리즈 노트 카드 ── */
+    .section-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px 28px;
+      max-width: 480px;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 16px;
+    }
+
+    .release-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .milestone {
+      margin-bottom: 20px;
+    }
+
+    .milestone:last-child { margin-bottom: 0; }
+
+    .milestone-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--green-600);
+      margin-bottom: 8px;
+    }
+
+    .milestone-title .tag {
+      background: var(--green-100);
+      color: var(--green-600);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    .milestone ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .milestone li {
+      font-size: 0.85rem;
+      color: var(--gray-700);
+      line-height: 1.5;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .milestone li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--green-500);
+      font-weight: 700;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--gray-200);
+      margin: 14px 0;
+    }
+
+    /* ── 안드로이드 안내 카드 ── */
+    .info-card {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      max-width: 480px;
+      width: 100%;
+      margin-top: 16px;
+      font-size: 0.82rem;
+      color: #92400e;
+      line-height: 1.7;
+    }
+
+    .info-card strong { font-weight: 700; }
+
+    /* ── 푸터 ── */
+    footer {
+      margin-top: 36px;
+      font-size: 0.75rem;
+      color: var(--gray-500);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 헤더 카드 -->
+  <div class="hero">
+    <div class="app-icon">
+      <!-- 잎사귀 아이콘 (SVG inline) -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20
+                 C19 20 22 3 22 3c-1 2-8 2-8 2a4 4 0 0 1 3 3z"/>
+      </svg>
+    </div>
+    <div class="app-name">leafylog</div>
+    <p class="app-tagline">
+      AI가 내 식물의 건강을 분석하는<br />로컬 퍼스트 식물 관리 다이어리
+    </p>
+    <span class="version-badge">v1.0.0 · Android</span>
+
+    <a class="download-btn" href="leafylog-latest.apk" download="leafylog-latest.apk">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 16l-5-5 1.41-1.41L11 13.17V4h2v9.17l2.59-2.58L17 11l-5 5zM5
+                 20h14v-2H5v2z"/>
+      </svg>
+      설치 파일 다운로드 (APK)
+    </a>
+    <p class="download-note">leafylog-latest.apk · Android 7.0(API 24) 이상</p>
+  </div>
+
+  <!-- 설치 전 안내 -->
+  <div class="info-card">
+    <strong>설치 전 확인 사항</strong><br />
+    APK 설치를 위해 기기의 <strong>설정 → 보안 → 출처를 알 수 없는 앱 허용</strong>을 활성화해야 한다.
+    설치 후에는 보안을 위해 다시 해제하는 것을 권장한다.
+  </div>
+
+  <!-- 릴리즈 노트 카드 -->
+  <div class="section-card">
+    <div class="section-title">Release Notes</div>
+    <div class="release-scroll">
+
+      <div class="milestone">
+        <div class="milestone-title">
+          <span>M1 · 프로젝트 스캐폴딩</span>
+          <span class="tag">기반</span>
+        </div>
+        <ul>
+          <li>Flutter 3.41 + Riverpod 2.4 기반 아키텍처 구성</li>
+          <li>Hive 로컬 NoSQL DB 초기화 및 어댑터 연동</li>
+          <li>flutter_dotenv를 이용한 API 키 환경 분리</li>
+          <li>GoRouter 기반 페이지 라우팅 체계 수립</li>
+        </ul>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="milestone">
+        <div class="milestone-title">
+          <span>M2 · 로컬 데이터 저장</span>
+          <span class="tag">스토리지</span>
+        </div>
+        <ul>
+          <li>plants.json / history_log.json 파일 기반 CRUD 구현</li>
+          <li>UUID v4 식물 ID 자동 발급 및 소프트 삭제(아카이브) 지원</li>
+          <li>사진 촬영·갤러리 선택 후 자동 압축 저장 (≤1.5 MB, 최대 2048 px)</li>
+          <li>AppSettings / CacheEntry Hive 모델 구현</li>
+        </ul>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="milestone">
+        <div class="milestone-title">
+          <span>M3 · Gemini AI 연동</span>
+          <span class="tag">AI 분석</span>
+        </div>
+        <ul>
+          <li>Gemini 1.5 Flash 멀티모달 API 호출 (이미지 + 프롬프트)</li>
+          <li>식물 종명·관리 경과일·최근 이벤트를 컨텍스트로 주입하여 오인식 방지</li>
+          <li>지수 백오프 재시도 (1 s → 2 s → 4 s, 최대 3회)</li>
+          <li>AI 응답 JSON 자동 파싱 → 건강 점수·이슈·권장사항 저장</li>
+          <li>파싱 실패 시 원시 응답을 history_log에 보존</li>
+        </ul>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="milestone">
+        <div class="milestone-title">
+          <span>M4 · QA 및 릴리즈 빌드</span>
+          <span class="tag">배포</span>
+        </div>
+        <ul>
+          <li>D-Day 계산·JSON 파싱 순수 함수 단위 테스트 17건 통과</li>
+          <li>ProGuard/R8 난독화 + split-debug-info 적용 릴리즈 APK 빌드</li>
+          <li>android:allowBackup 활성화로 Google One Backup 지원</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    leafylog v1.0.0 · 2026 · Built with Flutter &amp; Gemini AI
+  </footer>
+
+</body>
+</html>
