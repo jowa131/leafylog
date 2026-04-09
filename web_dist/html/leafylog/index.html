@@ -152,24 +152,48 @@
       margin-top: 20px;
     }
 
-    .section-header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
     .section-title {
       font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       color: var(--gray-500);
+      margin-bottom: 16px;
+    }
+
+    /* ── 버전 블록 ── */
+    .version-block {
+      margin-bottom: 24px;
+    }
+
+    .version-block:last-child { margin-bottom: 0; }
+
+    .version-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .version-tag {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--green-600);
+    }
+
+    .version-tag.old {
+      color: var(--gray-500);
     }
 
     .release-date {
       font-size: 0.78rem;
       color: var(--gray-500);
+    }
+
+    .version-divider {
+      border: none;
+      border-top: 1px solid var(--gray-200);
+      margin: 20px 0;
     }
 
     .feature-list {
@@ -186,6 +210,10 @@
       font-size: 0.88rem;
       color: var(--gray-700);
       line-height: 1.55;
+    }
+
+    .feature-list.old li {
+      color: var(--gray-500);
     }
 
     .feature-list li .icon {
@@ -257,32 +285,66 @@
 
   <!-- 릴리즈 노트 카드 -->
   <div class="section-card">
-    <div class="section-header">
-      <span class="section-title">What's New</span>
-      <span class="release-date">2026-04-09</span>
+    <div class="section-title">Release Notes</div>
+
+    <!-- v1.1.0 -->
+    <div class="version-block">
+      <div class="version-header">
+        <span class="version-tag">v1.1.0</span>
+        <span class="release-date">2026-04-09</span>
+      </div>
+      <ul class="feature-list">
+        <li>
+          <span class="icon">🤖</span>
+          <span>사진을 찍으면 AI가 식물 종명과 물주기 간격을 자동으로 입력해준다</span>
+        </li>
+        <li>
+          <span class="icon">📷</span>
+          <span>식물 상세 화면에서 사진과 메모를 추가해 성장 이력을 기록할 수 있다</span>
+        </li>
+        <li>
+          <span class="icon">📅</span>
+          <span>D-Day 표시가 등록일 기준으로 자동 갱신된다 (D+N)</span>
+        </li>
+        <li>
+          <span class="icon">🛡️</span>
+          <span>앱 내 오류가 자동으로 수집되어 안정성이 개선된다</span>
+        </li>
+        <li>
+          <span class="icon">🌿</span>
+          <span>식물 목록·상세·AI 분석 등 핵심 기능 전반 안정성 향상</span>
+        </li>
+      </ul>
     </div>
-    <ul class="feature-list">
-      <li>
-        <span class="icon">🤖</span>
-        <span>사진을 찍으면 AI가 식물 종명과 물주기 간격을 자동으로 입력해준다</span>
-      </li>
-      <li>
-        <span class="icon">📷</span>
-        <span>식물 상세 화면에서 사진과 메모를 추가해 성장 이력을 기록할 수 있다</span>
-      </li>
-      <li>
-        <span class="icon">📅</span>
-        <span>D-Day 표시가 등록일 기준으로 자동 갱신된다 (D+N)</span>
-      </li>
-      <li>
-        <span class="icon">🛡️</span>
-        <span>앱 내 오류가 자동으로 수집되어 안정성이 개선된다</span>
-      </li>
-      <li>
-        <span class="icon">🌿</span>
-        <span>식물 목록·상세·AI 분석 등 핵심 기능 전반 안정성 향상</span>
-      </li>
-    </ul>
+
+    <hr class="version-divider" />
+
+    <!-- v1.0.0 -->
+    <div class="version-block">
+      <div class="version-header">
+        <span class="version-tag old">v1.0.0</span>
+        <span class="release-date">2026-04-08</span>
+      </div>
+      <ul class="feature-list old">
+        <li>
+          <span class="icon">🌱</span>
+          <span>식물 등록 — 이름, 종명, 사진, 물주기 간격, D-Day 기준일 입력</span>
+        </li>
+        <li>
+          <span class="icon">🔬</span>
+          <span>AI(Gemini) 식물 사진 분석 — 건강 점수·이슈·관리 권장사항 제공</span>
+        </li>
+        <li>
+          <span class="icon">📋</span>
+          <span>관리 이력 타임라인 — AI 분석·물주기·메모 등 이벤트를 시간순으로 기록</span>
+        </li>
+        <li>
+          <span class="icon">💾</span>
+          <span>모든 데이터를 기기 내 로컬에 저장 — 인터넷 없이도 조회 가능</span>
+        </li>
+      </ul>
+    </div>
+
   </div>
 
   <footer>
