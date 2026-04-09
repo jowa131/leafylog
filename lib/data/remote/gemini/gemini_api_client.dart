@@ -42,6 +42,27 @@ class GeminiApiClient {
     return _callWithRetry(content);
   }
 
+  /// 사진을 보고 식물 등록 폼 자동완성 정보를 반환한다.
+  ///
+  /// 반환 JSON 예시:
+  /// {"species": "Monstera deliciosa", "watering_interval_days": 7, "summary": "한 줄 요약"}
+  Future<String> autofill({required Uint8List imageBytes}) async {
+    const prompt = '''
+첨부된 사진에서 식물 종명을 식별하고, 아래 JSON 형식으로만 응답하십시오.
+{
+  "species": "학명 또는 통용명 (한국어 가능)",
+  "watering_interval_days": 7,
+  "summary": "식물 상태 한 줄 요약"
+}
+식별이 불가능하면 species를 빈 문자열로 두고 watering_interval_days는 7로 반환하십시오.
+''';
+    final content = Content.multi([
+      DataPart('image/jpeg', imageBytes),
+      TextPart(prompt),
+    ]);
+    return _callWithRetry(content);
+  }
+
   /// Exponential Backoff 재시도 래퍼.
   ///
   /// 지연 시간: 1s, 2s, 4s (2^attempt * 1000ms)

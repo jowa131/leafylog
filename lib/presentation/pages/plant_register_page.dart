@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/services/crash_reporter.dart';
 import '../../data/local/file/models/plant_model.dart';
+import '../../providers/analysis_providers.dart';
 import '../../providers/storage_providers.dart';
 
 /// 새 식물을 등록하는 화면.
@@ -28,6 +31,7 @@ class _PlantRegisterPageState extends ConsumerState<PlantRegisterPage> {
   DateTime _ddayAnchor = DateTime.now();
   String? _pendingThumbnailPath; // 임시 사진 파일 경로 (저장 전)
   bool _isSaving = false;
+  bool _isAutofilling = false; // AI Auto-fill 진행 중 여부
 
   @override
   void dispose() {
@@ -46,6 +50,45 @@ class _PlantRegisterPageState extends ConsumerState<PlantRegisterPage> {
     final file = await picker.pickImage(source: source, imageQuality: 90);
     if (file == null) return;
     setState(() => _pendingThumbnailPath = file.path);
+
+    // 사진 선택 즉시 AI Auto-fill을 백그라운드에서 시작한다.
+    _runAutofill(file.path);
+  }
+
+  /// Gemini로 종명·물주기·요약을 추출하여 폼 필드에 자동 입력한다.
+  Future<void> _runAutofill(String imagePath) async {
+    setState(() => _isAutofilling = true);
+    try {
+      final imageBytes = await File(imagePath).readAsBytes();
+      final gemini = ref.read(geminiApiClientProvider);
+      final raw = await gemini.autofill(imageBytes: imageBytes);
+
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+
+      final species = (json['species'] as String?) ?? '';
+      final wateringDays = (json['watering_interval_days'] as int?) ?? 7;
+
+      if (!mounted) return;
+      setState(() {
+        if (species.isNotEmpty) _speciesCtrl.text = species;
+        _wateringCtrl.text = wateringDays.toString();
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('AI가 종명과 물주기 간격을 자동 입력했다. 확인 후 수정하라.')),
+        );
+      }
+    } catch (e, stack) {
+      CrashReporter.instance.report(
+        message: 'Auto-fill 실패: $e',
+        stackTrace: stack.toString(),
+        deviceInfo: {'source': 'PlantRegisterPage.autofill'},
+      );
+      // Auto-fill 실패는 사용자에게 조용히 처리한다 — 폼은 그대로 사용 가능하다.
+    } finally {
+      if (mounted) setState(() => _isAutofilling = false);
+    }
   }
 
   void _showPhotoSourceSheet() {
@@ -150,9 +193,30 @@ class _PlantRegisterPageState extends ConsumerState<PlantRegisterPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _ThumbnailPicker(
-                imagePath: _pendingThumbnailPath,
-                onTap: _showPhotoSourceSheet,
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  _ThumbnailPicker(
+                    imagePath: _pendingThumbnailPath,
+                    onTap: _isAutofilling ? null : _showPhotoSourceSheet,
+                  ),
+                  if (_isAutofilling)
+                    Container(
+                      height: 180,
+                      decoration: BoxDecoration(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: Colors.white),
+                          SizedBox(height: 8),
+                          Text('AI 분석 중...', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 24),
               TextFormField(
@@ -224,7 +288,7 @@ class _ThumbnailPicker extends StatelessWidget {
   const _ThumbnailPicker({required this.imagePath, required this.onTap});
 
   final String? imagePath;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
