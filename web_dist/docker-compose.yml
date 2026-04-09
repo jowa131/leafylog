@@ -2,6 +2,11 @@ services:
   leafylog-web:
     build: .
     container_name: leafylog-web
-    ports:
-      - "8080:80"
     restart: unless-stopped
+    networks:
+      - proxy_net
+
+networks:
+  proxy_net:
+    external: true
+    name: myproject_default
