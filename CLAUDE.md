@@ -36,3 +36,11 @@
   1. 과도한 Mocking이 필요한 UI 위젯 테스트 코드는 작성하지 마라.
   2. 테스트 코드는 입력과 출력이 명확한 순수 비즈니스 로직(예: D-Day 계산, JSON 파싱 유틸리티 등)에 대해서만 최소한으로 작성한다.
   3. 세부 Task 단위마다 테스트를 실행하지 마라. 각 마일스톤(예: M2 전체) 개발이 완전히 종료되는 시점에만 `flutter_qa_builder` 스킬을 한 번 호출하여 전체 통합 빌드 안정성을 검증하라.
+
+---
+
+## 5. Version Control & Issue Tracking (버전 관리 및 티켓 동기화)
+- **Micro-Commits**: 마일스톤 전체가 끝나기를 기다리지 마라. 하나의 의미 있는 기능, 모듈, 또는 세부 Task 개발이 완료되고 검증되면 **즉시 `git add`와 `git commit`을 실행**하라.
+- **Commit Convention**: 커밋 메시지는 Conventional Commits 규약(feat, fix, refactor, chore 등)을 따르며, 메시지 끝에 반드시 관련된 **이슈/티켓 번호**를 포함하라. (예: `feat: Hive 로컬 스토리지 어댑터 구현 (#12)`)
+- **Auto-Push**: 커밋을 완료한 직후에는 반드시 **`git push`**를 실행하여 원격 저장소(Remote Repository)에 코드를 동기화하라.
+- **Ticket Management**: 코드 푸시 후, GitHub CLI(`gh`)를 사용하여 해당 Task와 관련된 이슈(Issue)를 업데이트하라. Task가 완전히 종료되었다면 `gh issue close <번호> -c "해결 내용 요약"` 명령어를 통해 코멘트를 남기고 티켓을 닫아라.
