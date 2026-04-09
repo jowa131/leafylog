@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/services/crash_reporter.dart';
 import '../../data/local/file/models/history_log_model.dart';
 import '../../data/local/file/models/plant_model.dart';
 import '../../providers/analysis_providers.dart';
@@ -94,10 +95,16 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      // 에러를 서버로 즉시 전송한다.
+      CrashReporter.instance.report(
+        message: 'AI 분석 실패: $e',
+        stackTrace: stack.toString(),
+        deviceInfo: {'plant_id': widget.plant.id, 'source': 'PlantDetailPage'},
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('분석 실패: $e')),
+          SnackBar(content: Text('분석 중 오류가 발생했다. 잠시 후 다시 시도하라. ($e)')),
         );
       }
     } finally {
