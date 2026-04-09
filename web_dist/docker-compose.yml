@@ -1,0 +1,7 @@
+services:
+  leafylog-web:
+    build: .
+    container_name: leafylog-web
+    ports:
+      - "8080:80"
+    restart: unless-stopped
