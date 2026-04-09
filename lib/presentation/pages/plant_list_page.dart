@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/date_utils.dart';
 import '../../data/local/file/models/plant_model.dart';
 import '../../providers/storage_providers.dart';
+import '../../providers/version_providers.dart';
 import 'plant_detail_page.dart';
 import 'plant_register_page.dart';
 
@@ -33,6 +34,7 @@ class PlantListPage extends ConsumerWidget {
           return _PlantGrid(plants: plants, docDir: docDir);
         },
       ),
+      bottomNavigationBar: const _VersionFooter(),
       floatingActionButton: FloatingActionButton(
         key: const Key('add_plant_fab'),
         onPressed: () => Navigator.push(
@@ -183,6 +185,41 @@ class _PlantCard extends StatelessWidget {
           ),
         ],
         ),
+      ),
+    );
+  }
+}
+
+/// 앱 하단 버전 정보 푸터.
+///
+/// 서버 version.json과 비교하여 최신 여부를 표시한다.
+class _VersionFooter extends ConsumerWidget {
+  const _VersionFooter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statusAsync = ref.watch(versionStatusProvider);
+
+    final (statusText, statusColor) = statusAsync.when(
+      loading: () => ('확인 중...', Colors.grey),
+      error: (_, __) => ('Unknown', Colors.grey),
+      data: (status) => switch (status) {
+        VersionStatus.latest => ('Latest', Colors.green),
+        VersionStatus.updateAvailable => ('Update Available', Colors.orange),
+        VersionStatus.unknown => ('Unknown', Colors.grey),
+      },
+    );
+
+    return Container(
+      height: 28,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: Text(
+        'v$kAppVersion  ·  $statusText',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: statusColor,
+              fontWeight: FontWeight.w600,
+            ),
       ),
     );
   }
