@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -87,19 +89,30 @@ class GeminiApiClient {
 
   /// 재시도 가능한 오류인지 판별한다.
   ///
-  /// HTTP 429 (Rate Limit), 503 (Service Unavailable) 해당.
+  /// 재시도 대상:
+  /// - [SocketException]: 네트워크 단절
+  /// - [TimeoutException]: 요청 타임아웃
+  /// - [ServerException] HTTP 429: Rate Limit / Resource Exhausted
+  /// - [ServerException] HTTP 503: Service Unavailable
+  ///
+  /// 재시도 불가:
+  /// - 인증 오류 (InvalidApiKey 등)
+  /// - 잘못된 요청 (400 Bad Request)
+  /// - 그 외 알 수 없는 예외
   bool _isRetryable(Object e) {
+    // 네트워크 레벨 오류: 항상 재시도 가능
+    if (e is SocketException || e is TimeoutException) return true;
+
+    // Gemini SDK ServerException: 상태코드 기반 판별
     if (e is ServerException) {
-      return e.message.contains('429') ||
-          e.message.contains('503') ||
-          e.message.toLowerCase().contains('resource exhausted') ||
-          e.message.toLowerCase().contains('unavailable');
+      final msg = e.message.toLowerCase();
+      return msg.contains('429') ||
+          msg.contains('resource exhausted') ||
+          msg.contains('503') ||
+          msg.contains('unavailable');
     }
-    final msg = e.toString().toLowerCase();
-    return msg.contains('429') ||
-        msg.contains('503') ||
-        msg.contains('rate') ||
-        msg.contains('exhausted') ||
-        msg.contains('unavailable');
+
+    // 그 외(InvalidApiKey, 400 등)는 재시도해도 의미 없음
+    return false;
   }
 }
