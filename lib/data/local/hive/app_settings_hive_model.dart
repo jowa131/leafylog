@@ -16,13 +16,17 @@ class AppSettingsHiveModel extends HiveObject {
   @HiveField(1)
   bool notificationsEnabled;
 
-  /// Tistory OAuth access token. 미연동 시 null
+  /// @deprecated Hive에 평문 저장은 보안 취약점이다.
+  /// M5 Tistory 연동 시 이 필드를 읽지 말고 SecureTokenService.getTistoryToken()을 사용한다.
+  /// 필드 자체는 기존 Hive 어댑터 호환성을 위해 유지한다 (fieldId: 2 불변).
   @HiveField(2)
+  @Deprecated('Use SecureTokenService.getTistoryToken() instead')
   String? tistoryAccessToken;
 
   AppSettingsHiveModel({
     this.isDarkMode = false,
     this.notificationsEnabled = true,
+    // ignore: deprecated_member_use_from_same_package
     this.tistoryAccessToken,
   });
 }

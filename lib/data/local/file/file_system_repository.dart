@@ -23,6 +23,11 @@ class FileSystemRepository {
   static const _plantsFile = 'plants.json';
   static const _historyFile = 'history_log.json';
 
+  /// Isolate 파싱 임계값: 64KB 미만은 메인 스레드에서 파싱한다.
+  ///
+  /// 소규모 JSON에 Isolate 컨텍스트 스위칭 오버헤드가 더 크다.
+  static const _isolateThresholdBytes = 64 * 1024;
+
   final _uuid = const Uuid();
 
   // ── 경로 헬퍼 ─────────────────────────────────────────────
@@ -63,6 +68,9 @@ class FileSystemRepository {
     if (!file.existsSync()) return PlantsIndex.empty();
 
     final raw = await file.readAsString();
+    if (raw.length < _isolateThresholdBytes) {
+      return PlantsIndex.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    }
     return Isolate.run(
       () => PlantsIndex.fromJson(jsonDecode(raw) as Map<String, dynamic>),
     );
@@ -71,9 +79,10 @@ class FileSystemRepository {
   /// [PlantsIndex]를 plants.json에 덮어쓴다.
   Future<void> _writePlantsIndex(PlantsIndex index) async {
     final file = await _getPlantsIndexFile();
-    final encoded = await Isolate.run(
-      () => const JsonEncoder.withIndent('  ').convert(index.toJson()),
-    );
+    final json = index.toJson();
+    final encoded = json.toString().length < _isolateThresholdBytes
+        ? const JsonEncoder.withIndent('  ').convert(json)
+        : await Isolate.run(() => const JsonEncoder.withIndent('  ').convert(json));
     await file.writeAsString(encoded);
   }
 
@@ -131,6 +140,9 @@ class FileSystemRepository {
     if (!file.existsSync()) return HistoryLogModel.empty(plantId);
 
     final raw = await file.readAsString();
+    if (raw.length < _isolateThresholdBytes) {
+      return HistoryLogModel.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    }
     return Isolate.run(
       () => HistoryLogModel.fromJson(jsonDecode(raw) as Map<String, dynamic>),
     );
@@ -139,9 +151,10 @@ class FileSystemRepository {
   Future<void> _writeHistoryLog(HistoryLogModel log) async {
     final plantDir = await _getPlantDir(log.plantId);
     final file = File('${plantDir.path}/$_historyFile');
-    final encoded = await Isolate.run(
-      () => const JsonEncoder.withIndent('  ').convert(log.toJson()),
-    );
+    final json = log.toJson();
+    final encoded = json.toString().length < _isolateThresholdBytes
+        ? const JsonEncoder.withIndent('  ').convert(json)
+        : await Isolate.run(() => const JsonEncoder.withIndent('  ').convert(json));
     await file.writeAsString(encoded);
   }
 

@@ -66,12 +66,15 @@ class HiveService {
   }
 
   /// 만료된 캐시 항목을 모두 삭제한다.
+  ///
+  /// 단일 순회로 만료 키를 수집하고, 없으면 deleteAll 호출을 건너뛴다.
   Future<void> evictExpiredCache() async {
-    final expiredKeys = _cacheBox.keys.where((k) {
-      final entry = _cacheBox.get(k);
-      return entry != null && !entry.isValid;
-    }).toList();
-
+    final expiredKeys = <dynamic>[];
+    for (final key in _cacheBox.keys) {
+      final entry = _cacheBox.get(key);
+      if (entry != null && !entry.isValid) expiredKeys.add(key);
+    }
+    if (expiredKeys.isEmpty) return;
     await _cacheBox.deleteAll(expiredKeys);
   }
 

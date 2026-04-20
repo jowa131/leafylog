@@ -62,9 +62,9 @@ class HistoryEntry {
   });
 
   factory HistoryEntry.fromJson(Map<String, dynamic> json) => HistoryEntry(
-        entryId: json['entry_id'] as String,
-        timestamp: DateTime.parse(json['timestamp'] as String),
-        eventType: EventType.fromString(json['event_type'] as String),
+        entryId: json['entry_id'] as String? ?? 'unknown_${DateTime.now().millisecondsSinceEpoch}',
+        timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+        eventType: EventType.fromString(json['event_type'] as String? ?? ''),
         photoFile: json['photo_file'] as String?,
         aiResult: json['ai_result'] != null
             ? AiResult.fromJson(json['ai_result'] as Map<String, dynamic>)
@@ -100,8 +100,12 @@ enum EventType {
   const EventType(this.value);
   final String value;
 
-  static EventType fromString(String s) =>
-      EventType.values.firstWhere((e) => e.value == s);
+  /// 일치하는 값이 없으면 [EventType.userNote]로 폴백한다.
+  /// 구버전 JSON에 미등록 event_type이 들어와도 앱이 크래시되지 않는다.
+  static EventType fromString(String s) => EventType.values.firstWhere(
+        (e) => e.value == s,
+        orElse: () => EventType.userNote,
+      );
 }
 
 /// Gemini AI 분석 결과 모델.
@@ -130,12 +134,12 @@ class AiResult {
   });
 
   factory AiResult.fromJson(Map<String, dynamic> json) => AiResult(
-        healthScore: json['health_score'] as int,
+        healthScore: (json['health_score'] as num?)?.toInt() ?? 0,
         detectedIssues:
-            List<String>.from(json['detected_issues'] as List<dynamic>),
+            List<String>.from(json['detected_issues'] as List<dynamic>? ?? []),
         recommendations:
-            List<String>.from(json['recommendations'] as List<dynamic>),
-        confidence: (json['confidence'] as num).toDouble(),
+            List<String>.from(json['recommendations'] as List<dynamic>? ?? []),
+        confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
         rawResponseHash: json['raw_response_hash'] as String?,
         summary: json['summary'] as String?,
       );
