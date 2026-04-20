@@ -59,7 +59,8 @@ class _PlantRegisterPageState extends ConsumerState<PlantRegisterPage> {
   Future<void> _runAutofill(String imagePath) async {
     setState(() => _isAutofilling = true);
     try {
-      final imageBytes = await File(imagePath).readAsBytes();
+      final photoService = ref.read(photoServiceProvider);
+      final imageBytes = await photoService.readBytes(imagePath);
       final gemini = ref.read(geminiApiClientProvider);
       final raw = await gemini.autofill(imageBytes: imageBytes);
 

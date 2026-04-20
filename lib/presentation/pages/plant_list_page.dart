@@ -96,16 +96,22 @@ class _PlantGrid extends StatelessWidget {
         childAspectRatio: 0.78,
       ),
       itemCount: plants.length,
-      itemBuilder: (_, i) => _PlantCard(
-        plant: plants[i],
-        docDir: docDir,
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PlantDetailPage(plant: plants[i]),
+      itemBuilder: (_, i) {
+        final plant = plants[i];
+        // 그리드 빌드 시점에 한 번만 계산하여 카드에 전달한다.
+        final ddayElapsed = calcDdayElapsed(plant.ddayAnchor);
+        return _PlantCard(
+          plant: plant,
+          docDir: docDir,
+          ddayElapsed: ddayElapsed,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PlantDetailPage(plant: plant),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -115,15 +121,14 @@ class _PlantCard extends StatelessWidget {
   const _PlantCard({
     required this.plant,
     required this.docDir,
+    required this.ddayElapsed,
     required this.onTap,
   });
 
   final PlantModel plant;
   final String docDir;
+  final int ddayElapsed;
   final VoidCallback onTap;
-
-  // D-Day 계산을 core/utils/date_utils.dart 공용 함수로 통일한다.
-  int get _ddayElapsed => calcDdayElapsed(plant.ddayAnchor);
 
   /// 썸네일 파일의 전체 경로를 반환한다.
   String? get _thumbnailPath {
@@ -179,7 +184,7 @@ class _PlantCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
-                _DdayChip(elapsed: _ddayElapsed),
+                _DdayChip(elapsed: ddayElapsed),
               ],
             ),
           ),
@@ -202,7 +207,7 @@ class _VersionFooter extends ConsumerWidget {
 
     final (statusText, statusColor) = statusAsync.when(
       loading: () => ('확인 중...', Colors.grey),
-      error: (_, __) => ('Unknown', Colors.grey),
+      error: (_, _) => ('Unknown', Colors.grey),
       data: (status) => switch (status) {
         VersionStatus.latest => ('Latest', Colors.green),
         VersionStatus.updateAvailable => ('Update Available', Colors.orange),

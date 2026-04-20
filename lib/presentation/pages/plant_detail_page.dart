@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +8,9 @@ import '../../data/local/file/models/history_log_model.dart';
 import '../../data/local/file/models/plant_model.dart';
 import '../../providers/analysis_providers.dart';
 import '../../providers/storage_providers.dart';
+import '../widgets/add_growth_record_sheet.dart';
+import '../widgets/history_timeline.dart';
+import '../widgets/plant_info_card.dart';
 import 'analysis_result_page.dart';
 
 /// 식물 상세 화면.
@@ -29,7 +30,6 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
   bool _isAnalyzing = false;
   bool _isSavingRecord = false;
 
-  // D-Day 계산을 core/utils/date_utils.dart의 공용 함수로 통일한다.
   int get _ddayElapsed => calcDdayElapsed(widget.plant.ddayAnchor);
 
   // ── AI 분석 플로우 ────────────────────────────────────────
@@ -83,7 +83,6 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
         photoPath: file.path,
       );
 
-      // 이력 캐시 무효화 후 결과 화면으로 이동
       ref.invalidate(plantHistoryProvider(widget.plant.id));
 
       if (mounted) {
@@ -95,7 +94,6 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
         );
       }
     } catch (e, stack) {
-      // 에러를 서버로 즉시 전송한다.
       CrashReporter.instance.report(
         message: 'AI 분석 실패: $e',
         stackTrace: stack.toString(),
@@ -103,7 +101,7 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('분석 중 오류가 발생했다. 잠시 후 다시 시도하라. ($e)')),
+          const SnackBar(content: Text('분석 중 오류가 발생했다. 잠시 후 다시 시도하라.')),
         );
       }
     } finally {
@@ -113,73 +111,14 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
 
   // ── 성장 기록 추가 플로우 ─────────────────────────────────
 
-  /// 사진과 메모를 첨부하여 USER_NOTE 이력 엔트리를 저장한다.
   void _showAddGrowthRecordSheet() {
-    final noteCtrl = TextEditingController();
-    String? pickedPhotoPath;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('성장 기록 추가',
-                      style: Theme.of(ctx).textTheme.titleMedium),
-                  const SizedBox(height: 16),
-                  // 사진 선택
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.add_a_photo_outlined),
-                    label: Text(pickedPhotoPath == null
-                        ? '사진 선택 (선택)'
-                        : '사진 선택됨'),
-                    onPressed: () async {
-                      final picker = ImagePicker();
-                      final file = await picker.pickImage(
-                          source: ImageSource.gallery, imageQuality: 90);
-                      if (file != null) {
-                        setSheetState(() => pickedPhotoPath = file.path);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: noteCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '메모',
-                      hintText: '오늘 상태, 특이사항 등',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _saveGrowthRecord(
-                        note: noteCtrl.text.trim(),
-                        photoPath: pickedPhotoPath,
-                      );
-                    },
-                    child: const Text('저장'),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (_) => AddGrowthRecordSheet(
+        onSave: (note, photoPath) =>
+            _saveGrowthRecord(note: note, photoPath: photoPath),
+      ),
     );
   }
 
@@ -193,8 +132,6 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
     setState(() => _isSavingRecord = true);
     try {
       String? savedFilename;
-
-      // 사진이 있으면 압축 저장한다.
       if (photoPath != null) {
         final photoService = ref.read(photoServiceProvider);
         savedFilename = await photoService.saveFromPath(
@@ -205,9 +142,7 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
 
       final now = DateTime.now();
       final entry = HistoryEntry(
-        entryId:
-            'log_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_'
-            '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}',
+        entryId: buildEntryId(now),
         timestamp: now,
         eventType: EventType.userNote,
         photoFile: savedFilename,
@@ -217,7 +152,6 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
       final repo = ref.read(fileSystemRepositoryProvider);
       await repo.appendHistoryEntry(widget.plant.id, entry);
 
-      // 이력 캐시 무효화
       ref.invalidate(plantHistoryProvider(widget.plant.id));
 
       if (mounted) {
@@ -233,7 +167,7 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('저장 실패: $e')),
+          const SnackBar(content: Text('저장에 실패했다. 잠시 후 다시 시도하라.')),
         );
       }
     } finally {
@@ -245,9 +179,8 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final historyAsync =
-        ref.watch(plantHistoryProvider(widget.plant.id));
-    final appDocDirAsync = ref.watch(appDocDirProvider); // Provider<String>
+    final historyAsync = ref.watch(plantHistoryProvider(widget.plant.id));
+    final docDir = ref.watch(appDocDirProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -259,28 +192,28 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _PlantInfoCard(
+            PlantInfoCard(
               plant: widget.plant,
               ddayElapsed: _ddayElapsed,
-              docDir: appDocDirAsync,
+              docDir: docDir,
             ),
             const SizedBox(height: 20),
             Text('이력', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             historyAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (e, _) =>
-                  Text('이력 로드 실패: $e'),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('이력 로드 실패: $e'),
               data: (log) => log.entries.isEmpty
                   ? Text(
                       '기록된 이력이 없다.',
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.outline),
                     )
-                  : _HistoryTimeline(entries: log.entries.reversed.take(10).toList()),
+                  : HistoryTimeline(
+                      entries: log.entries.reversed.take(10).toList(),
+                    ),
             ),
-            const SizedBox(height: 80), // FAB 여백
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -288,7 +221,6 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // 성장 기록 추가 버튼
           FloatingActionButton.small(
             key: const Key('add_growth_record_button'),
             heroTag: 'add_growth',
@@ -305,7 +237,6 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
                 : const Icon(Icons.add_photo_alternate_outlined),
           ),
           const SizedBox(height: 8),
-          // AI 분석 버튼
           FloatingActionButton.extended(
             key: const Key('analyze_button'),
             heroTag: 'analyze',
@@ -318,193 +249,6 @@ class _PlantDetailPageState extends ConsumerState<PlantDetailPage> {
                   )
                 : const Icon(Icons.biotech_outlined),
             label: Text(_isAnalyzing ? '분석 중...' : 'AI 분석 시작'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 식물 정보 카드 ─────────────────────────────────────────────
-
-class _PlantInfoCard extends StatelessWidget {
-  const _PlantInfoCard({
-    required this.plant,
-    required this.ddayElapsed,
-    required this.docDir,
-  });
-
-  final PlantModel plant;
-  final int ddayElapsed;
-  final String? docDir;
-
-  String? get _thumbnailPath {
-    if (docDir == null || plant.thumbnail == null) return null;
-    return '$docDir/leafylog/plants/${plant.id}/photos/${plant.thumbnail}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final thumbPath = _thumbnailPath;
-    final thumbFile = thumbPath != null ? File(thumbPath) : null;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: 200,
-            child: (thumbFile != null && thumbFile.existsSync())
-                ? Image.file(thumbFile, fit: BoxFit.cover)
-                : Container(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest,
-                    child: Icon(
-                      Icons.local_florist_outlined,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  plant.displayName,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                Text(
-                  plant.species,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    _InfoChip(label: 'D+$ddayElapsed'),
-                    _InfoChip(label: '물주기 ${plant.wateringIntervalDays}일'),
-                    ...plant.tags.map((t) => _InfoChip(label: t)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      label: Text(label, style: Theme.of(context).textTheme.labelSmall),
-      padding: EdgeInsets.zero,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-}
-
-// ── 이력 타임라인 ─────────────────────────────────────────────
-
-class _HistoryTimeline extends StatelessWidget {
-  const _HistoryTimeline({required this.entries});
-
-  final List<HistoryEntry> entries;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: entries.map((e) => _TimelineItem(entry: e)).toList(),
-    );
-  }
-}
-
-class _TimelineItem extends StatelessWidget {
-  const _TimelineItem({required this.entry});
-
-  final HistoryEntry entry;
-
-  String _formatDt(DateTime dt) {
-    final d = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
-        '${dt.day.toString().padLeft(2, '0')}';
-    final t = '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}';
-    return '$d  $t';
-  }
-
-  IconData get _icon {
-    switch (entry.eventType) {
-      case EventType.aiAnalysis:
-        return Icons.biotech_outlined;
-      case EventType.watering:
-        return Icons.water_drop_outlined;
-      case EventType.fertilizing:
-        return Icons.grass_outlined;
-      case EventType.repotting:
-        return Icons.yard_outlined;
-      case EventType.healthCheck:
-        return Icons.monitor_heart_outlined;
-      case EventType.userNote:
-        return Icons.note_outlined;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ai = entry.aiResult;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(_icon, size: 20, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.eventType.value,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Text(
-                  _formatDt(entry.timestamp),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                ),
-                if (ai != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '건강 점수: ${ai.healthScore}점  신뢰도: ${(ai.confidence * 100).toStringAsFixed(0)}%',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  if (ai.summary != null)
-                    Text(ai.summary!,
-                        style: Theme.of(context).textTheme.bodySmall),
-                ],
-                if (entry.userNote != null)
-                  Text(
-                    entry.userNote!,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-              ],
-            ),
           ),
         ],
       ),
