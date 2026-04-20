@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import '../../core/utils/date_utils.dart';
 import '../../core/utils/json_parser.dart';
 import '../../data/local/file/file_system_repository.dart';
@@ -46,8 +44,10 @@ class AnalyzePlantUseCase {
     );
 
     // 2. 저장된 압축 이미지 바이트 로드 (Gemini 전송용)
-    final photosDir = await _fsRepo.getPhotosDirPath(plant.id);
-    final imageBytes = await File('$photosDir/$filename').readAsBytes();
+    final imageBytes = await _photoService.readSavedBytes(
+      plantId: plant.id,
+      filename: filename,
+    );
 
     // 3. 컨텍스트 조립
     final context = await _buildContext(plant);
@@ -75,7 +75,7 @@ class AnalyzePlantUseCase {
 
     // 7. history_log.json에 AI_ANALYSIS 엔트리 저장
     final entry = HistoryEntry(
-      entryId: 'log_${_timestamp(DateTime.now())}',
+      entryId: buildEntryId(DateTime.now()),
       timestamp: DateTime.now(),
       eventType: EventType.aiAnalysis,
       photoFile: filename,
@@ -143,7 +143,7 @@ class AnalyzePlantUseCase {
     String photoFile,
   ) async {
     final entry = HistoryEntry(
-      entryId: 'log_raw_${_timestamp(DateTime.now())}',
+      entryId: 'raw_${buildEntryId(DateTime.now())}',
       timestamp: DateTime.now(),
       eventType: EventType.userNote,
       photoFile: photoFile,
@@ -153,16 +153,6 @@ class AnalyzePlantUseCase {
   }
 
   // ── 유틸 ──────────────────────────────────────────────────
-
-  String _timestamp(DateTime dt) {
-    final d = '${dt.year.toString().padLeft(4, '0')}'
-        '${dt.month.toString().padLeft(2, '0')}'
-        '${dt.day.toString().padLeft(2, '0')}';
-    final t = '${dt.hour.toString().padLeft(2, '0')}'
-        '${dt.minute.toString().padLeft(2, '0')}'
-        '${dt.second.toString().padLeft(2, '0')}';
-    return '${d}_$t';
-  }
 
   String _shortDate(DateTime dt) =>
       '${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
