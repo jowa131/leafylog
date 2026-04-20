@@ -21,7 +21,7 @@ migrate_working_dir/
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
-#.vscode/
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -47,3 +47,9 @@ app.*.map.json
 # API 키 — 절대 커밋 금지
 .env
 web_dist/html/leafylog/leafylog-*.apk
+
+# Claude Code 도구 파일 — 커밋 불필요
+.claude/
+CLAUDE.md
+.antigravityrules
+SKILL.md
