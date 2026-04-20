@@ -67,7 +67,8 @@ class PlantsNotifier extends StateNotifier<AsyncValue<List<PlantModel>>> {
 
   /// 새 식물을 등록한다.
   ///
-  /// 메모리 상태에 즉시 추가한 뒤 디스크에 저장한다.
+  /// 메모리 상태에 즉시 추가한 뒤(Optimistic Update) 디스크에 저장한다.
+  /// 디스크 저장 실패 시 메모리 상태를 이전 값으로 롤백한다.
   Future<PlantModel> registerPlant(PlantModel plant) async {
     final newPlant = PlantModel(
       id: _uuid.v4(),
@@ -81,28 +82,51 @@ class PlantsNotifier extends StateNotifier<AsyncValue<List<PlantModel>>> {
       isArchived: false,
     );
 
+    final previous = state;
     final current = state.valueOrNull ?? [];
     state = AsyncValue.data([...current, newPlant]);
 
-    await _repo.saveNewPlant(newPlant);
+    try {
+      await _repo.saveNewPlant(newPlant);
+    } catch (e) {
+      state = previous;
+      rethrow;
+    }
     return newPlant;
   }
 
   /// 식물 정보를 수정한다.
   ///
-  /// 메모리 상태를 먼저 교체하고 디스크에 동기화한다.
+  /// 메모리 상태를 먼저 교체하고(Optimistic Update) 디스크에 동기화한다.
+  /// 디스크 저장 실패 시 메모리 상태를 이전 값으로 롤백한다.
   Future<void> updatePlant(PlantModel plant) async {
+    final previous = state;
     final current = state.valueOrNull ?? [];
     state = AsyncValue.data(
       current.map((p) => p.id == plant.id ? plant : p).toList(),
     );
-    await _repo.updatePlant(plant);
+
+    try {
+      await _repo.updatePlant(plant);
+    } catch (e) {
+      state = previous;
+      rethrow;
+    }
   }
 
   /// 식물을 아카이브 처리하고 목록에서 즉시 제거한다.
+  ///
+  /// 디스크 저장 실패 시 메모리 상태를 이전 값으로 롤백한다.
   Future<void> archivePlant(String plantId) async {
+    final previous = state;
     final current = state.valueOrNull ?? [];
     state = AsyncValue.data(current.where((p) => p.id != plantId).toList());
-    await _repo.archivePlant(plantId);
+
+    try {
+      await _repo.archivePlant(plantId);
+    } catch (e) {
+      state = previous;
+      rethrow;
+    }
   }
 }

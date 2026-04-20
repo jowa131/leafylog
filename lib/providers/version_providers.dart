@@ -10,7 +10,7 @@ const String kAppVersion = '1.2.0';
 
 /// version.json 엔드포인트.
 const String _versionUrl =
-    'http://mymel0dy.iptime.org/leafylog/version.json';
+    'https://mymel0dy.iptime.org/leafylog/version.json';
 
 /// 서버 최신 버전과의 비교 결과.
 enum VersionStatus { latest, updateAvailable, unknown }
