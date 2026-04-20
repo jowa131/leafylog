@@ -21,18 +21,37 @@ String extractJson(String text) {
 
 /// [rawText]를 파싱하여 [AiResult]를 반환한다.
 ///
-/// 파싱 실패 시 [FormatException]을 던진다.
+/// 필수 필드(health_score, confidence) 누락 또는 범위 위반 시 [FormatException]을 던진다.
 AiResult parseAiResult(String rawText) {
   final jsonStr = extractJson(rawText);
   final decoded = jsonDecode(jsonStr) as Map<String, dynamic>;
 
+  // 필수 필드 존재 검증
+  if (decoded['health_score'] == null) {
+    throw const FormatException('Gemini 응답에 health_score 필드가 없다.');
+  }
+  if (decoded['confidence'] == null) {
+    throw const FormatException('Gemini 응답에 confidence 필드가 없다.');
+  }
+
+  final healthScore = (decoded['health_score'] as num).toInt();
+  final confidence = (decoded['confidence'] as num).toDouble();
+
+  // 값 범위 검증
+  if (healthScore < 0 || healthScore > 100) {
+    throw FormatException('health_score 범위 오류: $healthScore (0~100 이어야 한다)');
+  }
+  if (confidence < 0.0 || confidence > 1.0) {
+    throw FormatException('confidence 범위 오류: $confidence (0.0~1.0 이어야 한다)');
+  }
+
   return AiResult(
-    healthScore: (decoded['health_score'] as num).toInt(),
+    healthScore: healthScore,
     detectedIssues:
         List<String>.from(decoded['detected_issues'] as List<dynamic>? ?? []),
     recommendations:
         List<String>.from(decoded['recommendations'] as List<dynamic>? ?? []),
-    confidence: (decoded['confidence'] as num).toDouble(),
+    confidence: confidence,
     summary: decoded['summary'] as String?,
   );
 }

@@ -14,7 +14,7 @@ class CrashReporter {
 
   static final CrashReporter instance = CrashReporter._();
 
-  static const _endpoint = 'http://mymel0dy.iptime.org/leafylog/api/log';
+  static const _endpoint = 'https://mymel0dy.iptime.org/leafylog/api/log';
   static const _queueFileName = 'error_queue.json';
 
   // ── 초기화 ──────────────────────────────────────────────
@@ -102,7 +102,9 @@ class CrashReporter {
   }
 
   void _flushQuietly() {
-    flush().catchError((_) {});
+    flush().catchError((e) {
+      debugPrint('[CrashReporter] 백그라운드 flush 실패: $e');
+    });
   }
 
   Future<File> _queueFile() async {

@@ -1,3 +1,27 @@
+/// 이력 엔트리 ID를 생성한다.
+///
+/// 형식: `log_YYYYMMDD_HHMMSS` (tech_spec.md 2.3항)
+String buildEntryId(DateTime now) {
+  final d = '${now.year.toString().padLeft(4, '0')}'
+      '${now.month.toString().padLeft(2, '0')}'
+      '${now.day.toString().padLeft(2, '0')}';
+  final t = '${now.hour.toString().padLeft(2, '0')}'
+      '${now.minute.toString().padLeft(2, '0')}'
+      '${now.second.toString().padLeft(2, '0')}';
+  return 'log_${d}_$t';
+}
+
+/// 이력 타임라인 표시용 날짜/시각 포맷.
+///
+/// 형식: `YYYY-MM-DD  HH:MM`
+String formatDisplayDateTime(DateTime dt) {
+  final d = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
+      '${dt.day.toString().padLeft(2, '0')}';
+  final t = '${dt.hour.toString().padLeft(2, '0')}:'
+      '${dt.minute.toString().padLeft(2, '0')}';
+  return '$d  $t';
+}
+
 /// D-Day 기준일로부터 오늘까지 경과일을 계산한다.
 ///
 /// [ddayAnchor]: ISO 8601 날짜 문자열 (예: "2026-01-15")
