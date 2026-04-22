@@ -48,8 +48,5 @@ app.*.map.json
 .env
 web_dist/html/leafylog/leafylog-*.apk
 
-# Claude Code 도구 파일 — 커밋 불필요
+# Claude Code 도구 파일
 .claude/
-CLAUDE.md
-.antigravityrules
-SKILL.md

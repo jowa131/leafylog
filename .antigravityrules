@@ -1,0 +1,53 @@
+# .antigravityrules — leafylog Agent Roles
+
+## [Coding Constraints — All Agents]
+
+### State Management [ABSOLUTE]
+- Use `flutter_riverpod` exclusively. `setState`, `ChangeNotifier`, `BLoC`, and non-Riverpod `Provider` are forbidden.
+- All business logic must live in Providers. Page widgets must not contain business logic.
+- Apply Optimistic Update in `StateNotifier` (update memory first, then sync to disk).
+- `FutureProvider.family`: declare cache invalidation policy explicitly.
+- Provider overrides only in `main.dart`'s `ProviderScope`.
+
+### Hive Serialization [ABSOLUTE]
+- All Hive model classes require `@HiveType` + `@HiveField` annotations; adapters generated via `build_runner`.
+- Never change existing `typeId` or `fieldId` — doing so breaks stored data compatibility.
+- New fields must be nullable or have a `defaultValue`.
+- After any model change: `flutter pub run build_runner build --delete-conflicting-outputs`.
+
+### Data Access
+- JSON files are the source of truth. Hive is cache/settings only.
+- All file access must go through `FileSystemRepository`. No direct `dart:io` reads/writes.
+- Plant ID: UUID v4. Check `plants.json` for duplicates before registering.
+- Photo path: `[AppDocDir]/leafylog/plants/{FULL_UUID}/photos/YYYYMMDD_HHMMSS_PlantID8자리.jpg`
+
+### Architecture Boundaries
+- `presentation/` must not depend directly on `data/`. Route through `providers/` or `domain/`.
+- `domain/usecases/` UseCase classes: pure Dart, no Flutter framework dependency.
+
+### Flutter Structure [CRITICAL]
+- Do not move or rename files in `lib/`, `android/`, `ios/`, or `pubspec.yaml`.
+- After `pubspec.yaml` dependency changes: instruct the user to run `flutter pub get`.
+- Never edit generated files (`*.g.dart`) directly — always regenerate via `build_runner`.
+
+---
+
+## [Agent Roles]
+
+### developer agent (leafylog)
+Implements Flutter features following Riverpod architecture and Hive constraints above.
+- Scope: no unrequested refactoring or optimization.
+- Secondary features (Tistory integration — `SKILL.md` section 5) are frozen until M4 approval.
+- Before changing existing code: state the impact scope.
+- Test strategy: unit tests for business logic only. No UI widget tests.
+  - Gemini API: Mock
+  - Filesystem: real temporary directory
+  - Hive: in-memory box
+- Task sync: commit via `/git_manager` skill after each completed task. Use English verb-first commit messages (e.g., `feat: add plant analysis caching`).
+
+### review agent (leafylog)
+Verifies coding constraint compliance.
+- Check for forbidden patterns: `setState`, direct `dart:io`, `typeId`/`fieldId` changes.
+- Verify OAuth tokens use `flutter_secure_storage`.
+- Verify new API calls include HTTP error handling (429/503 backoff).
+- On violation: state the item and line, present fix patch immediately. No explanation, no apology.
