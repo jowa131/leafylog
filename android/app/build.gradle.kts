@@ -29,14 +29,17 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
-    signingConfigs {
-        create("release") {
+    val releaseSigningConfig =
+        if (keyPropertiesFile.exists()) {
+            signingConfigs.create("release") {
             keyAlias = keyProperties["keyAlias"] as String
             keyPassword = keyProperties["keyPassword"] as String
             storeFile = file(keyProperties["storeFile"] as String)
             storePassword = keyProperties["storePassword"] as String
+            }
+        } else {
+            null
         }
-    }
 
     defaultConfig {
         applicationId = "com.leafylog.leafylog"
@@ -48,7 +51,8 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig =
+                releaseSigningConfig ?: signingConfigs.getByName("debug")
         }
     }
 }

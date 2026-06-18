@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -14,7 +15,9 @@ class CrashReporter {
 
   static final CrashReporter instance = CrashReporter._();
 
-  static const _endpoint = 'https://mymel0dy.iptime.org/leafylog/api/log';
+  static String get _endpoint =>
+      dotenv.env['CRASH_LOG_ENDPOINT'] ??
+      'https://mymel0dy.iptime.org/leafylog/api/log';
   static const _queueFileName = 'error_queue.json';
 
   // ── 초기화 ──────────────────────────────────────────────

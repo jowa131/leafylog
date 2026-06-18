@@ -85,7 +85,7 @@ Note: `lib/` and `test/` follow Flutter framework conventions and override the s
 
 ## Operating Environment
 
-- Host OS: Windows 11 + WSL2 (Ubuntu)
+- Host OS: Windows 11 native development environment
 - Flutter SDK: `~/flutter`
 - Android SDK: `~/android-sdk`
 - Dev target: USB-connected Android device via `flutter run`

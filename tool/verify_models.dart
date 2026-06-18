@@ -37,7 +37,10 @@ void main() async {
   final updatedPlant = plant.copyWith(displayName: '몬스테라 (업데이트)');
   final updatedIndex = index.upsert(updatedPlant);
   assert(updatedIndex.plants.length == 1, '중복 insert 발생');
-  assert(updatedIndex.plants.first.displayName == '몬스테라 (업데이트)', 'upsert 교체 실패');
+  assert(
+    updatedIndex.plants.first.displayName == '몬스테라 (업데이트)',
+    'upsert 교체 실패',
+  );
   print('[PASS] PlantsIndex.upsert 검증 완료');
 
   // 3. HistoryEntry (AI_ANALYSIS) 직렬화 검증
@@ -55,7 +58,10 @@ void main() async {
       summary: '전체적으로 양호하나 하엽 황화 관찰됨',
     ),
     userNote: '새 흙으로 분갈이 후 첫 분석',
-    contextSnapshot: ContextSnapshot(species: 'Monstera deliciosa', ddayElapsed: 84),
+    contextSnapshot: ContextSnapshot(
+      species: 'Monstera deliciosa',
+      ddayElapsed: 84,
+    ),
   );
 
   final entryJson = entry.toJson();
@@ -66,25 +72,32 @@ void main() async {
   print('[PASS] HistoryEntry(AI_ANALYSIS) roundtrip 검증 완료');
 
   // 4. 임시 plants.json 파일 생성 (data_inspector 검증용)
-  final tmpDir = Directory('/tmp/leafylog');
+  final tmpDir = Directory(
+    '${Directory.systemTemp.path}${Platform.pathSeparator}leafylog',
+  );
   if (!tmpDir.existsSync()) tmpDir.createSync(recursive: true);
 
   final plantsIndex = PlantsIndex.empty().upsert(plant);
-  final plantsFile = File('/tmp/leafylog/plants.json');
+  final plantsFile = File('${tmpDir.path}${Platform.pathSeparator}plants.json');
   plantsFile.writeAsStringSync(
     const JsonEncoder.withIndent('  ').convert(plantsIndex.toJson()),
   );
 
-  final histDir = Directory('/tmp/leafylog/plants/${plant.id}');
+  final histDir = Directory(
+    '${tmpDir.path}${Platform.pathSeparator}plants'
+    '${Platform.pathSeparator}${plant.id}',
+  );
   if (!histDir.existsSync()) histDir.createSync(recursive: true);
 
   final log = HistoryLogModel.empty(plant.id).append(entry);
-  final histFile = File('/tmp/leafylog/plants/${plant.id}/history_log.json');
+  final histFile = File(
+    '${histDir.path}${Platform.pathSeparator}history_log.json',
+  );
   histFile.writeAsStringSync(
     const JsonEncoder.withIndent('  ').convert(log.toJson()),
   );
 
-  print('\n[생성] /tmp/leafylog/plants.json');
-  print('[생성] /tmp/leafylog/plants/${plant.id}/history_log.json');
+  print('\n[생성] ${plantsFile.path}');
+  print('[생성] ${histFile.path}');
   print('\n=== 모든 검증 통과 ===');
 }

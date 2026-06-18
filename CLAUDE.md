@@ -1,6 +1,5 @@
 # leafylog — Agent Context
 
-Read `~/projects/.antigravityrules` for common agent roles and global workflow.
 Read `.antigravityrules` in this directory for leafylog coding constraints and agent roles.
 Read `SKILL.md` for tech stack, system architecture, and feature specification.
 
@@ -11,8 +10,10 @@ Read `SKILL.md` for tech stack, system architecture, and feature specification.
 This is a Flutter/Android native app. Docker/Nginx rules do not apply to the app itself.
 
 - App is NOT Dockerized. APK is installed directly on device.
-- WSL: `flutter run` targets USB-connected Android device (check with `flutter devices`).
-- Android SDK: `~/android-sdk`, Flutter SDK: `~/flutter`
+- Windows: `flutter run` targets an emulator or USB-connected Android device.
+- Check configured devices with `flutter devices`.
+- Flutter SDK: `C:\Tools\flutter`
+- Android tooling: Android Studio and its managed Android SDK
 
 # Build Commands
 
@@ -38,7 +39,8 @@ flutter pub run build_runner build --delete-conflicting-outputs
 `web_dist/` runs a separate Dockerized crash report server on `myproject_default`:
 
 ```bash
-cd ~/projects/leafylog/web_dist && docker-compose up -d --build
+Set-Location C:\MyProject\leafylog\web_dist
+docker compose up -d --build
 ```
 
 - `leafylog-web` (172.18.0.7): static web + crash report UI
