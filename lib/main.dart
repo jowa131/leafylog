@@ -13,8 +13,8 @@ import 'providers/storage_providers.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env 로드 — GEMINI_API_KEY 등 환경변수 초기화
-  await dotenv.load(fileName: '.env');
+  // 기본 환경값 로드. 실제 비밀값은 --dart-define으로 주입한다.
+  await dotenv.load(fileName: '.env.example');
 
   // CrashReporter 초기화 — 큐에 쌓인 미전송 로그 재전송 시도
   await CrashReporter.instance.init();

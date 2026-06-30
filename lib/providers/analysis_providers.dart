@@ -12,7 +12,10 @@ import 'storage_providers.dart';
 ///
 /// API 키를 Provider 계층에서 주입하여 클라이언트가 환경변수에 직접 의존하지 않는다.
 final geminiApiClientProvider = Provider<GeminiApiClient>((ref) {
-  final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+  const definedApiKey = String.fromEnvironment('GEMINI_API_KEY');
+  final apiKey = definedApiKey.isNotEmpty
+      ? definedApiKey
+      : dotenv.env['GEMINI_API_KEY'] ?? '';
   return GeminiApiClient(apiKey: apiKey);
 });
 
@@ -32,11 +35,11 @@ final analyzePlantUseCaseProvider = Provider<AnalyzePlantUseCase>((ref) {
 /// Provider가 dispose될 때 Timer를 취소하여 참조 누수를 방지한다.
 final plantHistoryProvider = FutureProvider.autoDispose
     .family<HistoryLogModel, String>((ref, plantId) async {
-  final link = ref.keepAlive();
-  Timer? timer;
-  ref.onDispose(() => timer?.cancel());
-  timer = Timer(const Duration(minutes: 5), link.close);
+      final link = ref.keepAlive();
+      Timer? timer;
+      ref.onDispose(() => timer?.cancel());
+      timer = Timer(const Duration(minutes: 5), link.close);
 
-  final repo = ref.watch(fileSystemRepositoryProvider);
-  return repo.readHistoryLog(plantId);
-});
+      final repo = ref.watch(fileSystemRepositoryProvider);
+      return repo.readHistoryLog(plantId);
+    });

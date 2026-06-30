@@ -15,9 +15,16 @@ class CrashReporter {
 
   static final CrashReporter instance = CrashReporter._();
 
-  static String get _endpoint =>
-      dotenv.env['CRASH_LOG_ENDPOINT'] ??
-      'https://mymel0dy.iptime.org/leafylog/api/log';
+  static const _definedEndpoint = String.fromEnvironment('CRASH_LOG_ENDPOINT');
+  static String get _endpoint {
+    final endpoint = _definedEndpoint.isNotEmpty
+        ? _definedEndpoint
+        : dotenv.env['CRASH_LOG_ENDPOINT'];
+    return endpoint == null || endpoint.isEmpty
+        ? 'https://mymel0dy.iptime.org/leafylog/api/log'
+        : endpoint;
+  }
+
   static const _queueFileName = 'error_queue.json';
 
   // ── 초기화 ──────────────────────────────────────────────
